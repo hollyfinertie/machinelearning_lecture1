@@ -1,0 +1,83 @@
+---
+title: "Pre Class Assessment"
+author: "Holly Finertie"
+date: "1/17/2020"
+output: github_document
+---
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+```
+
+Read in data files
+```{r}
+data = read_csv("./data/data.csv") %>% 
+  janitor::clean_names()
+```
+
+Problem 1: 
+```{r}
+summary(data) 
+
+```
+
+Problem 2: 
+```{r}
+data_bmi = data %>% 
+  mutate(bmi_cat = case_when(
+      bmi <= 16.4 ~ "Severely underweight", 
+      bmi >= 16.5 & bmi <= 18.4 ~ "Underweight",
+      bmi >=18.5 & bmi <= 24.9 ~ "Normal weight",
+      bmi >= 25 & bmi <= 29.9 ~ "Overweight", 
+      bmi >= 30 & bmi <= 34.9 ~ "Obesity 1", 
+      bmi >= 35 & bmi <= 39.9 ~ "Obesity 2", 
+      bmi >= 40 ~ "Obesity 3"
+    )
+  )
+```
+
+
+Problem 3: 
+
+```{r}
+data_final = data_bmi %>% 
+  mutate(
+    type = recode(classification, 
+      `1` = "control", 
+      `2` = "case"), 
+    outcome = recode(type, 
+      "control" = 0, 
+      "case" = 1))
+    
+
+plot = data_final %>% 
+  ggplot(aes(x = bmi_cat, fill = type)) +
+  geom_bar(stat = "count")
+
+plot
+```
+
+
+Problem 4: 
+```{r}
+logit_reg = 
+  glm(outcome ~ glucose + homa + leptin + bmi + age, 
+      family = binomial(link = "logit"), data = data_final) %>% 
+  broom::tidy()
+
+logit_reg
+```
+
+Problem 5: 
+```{r}
+linear_reg = 
+  lm(insulin ~ bmi + age + glucose, data = data_final) %>% 
+  broom::tidy()
+
+linear_reg
+```
+
+
+
+
