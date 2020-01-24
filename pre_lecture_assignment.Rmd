@@ -1,6 +1,6 @@
 ---
-title: "Pre Class Assessment"
-author: "Holly Finertie"
+title: "Assignment 1"
+author: "Holly Finertie (HF2379)"
 date: "1/17/2020"
 output: github_document
 ---
@@ -10,19 +10,30 @@ library(tidyverse)
 library(ggplot2)
 ```
 
-Read in data files
+
+## Problem 1: 
+
+Please find tables below that provide summaries (min, mean, median, IQR, max) of the quantitative features of the dataset. 
+
 ```{r}
 data = read_csv("./data/data.csv") %>% 
   janitor::clean_names()
-```
 
-Problem 1: 
-```{r}
 summary(data) 
-
 ```
 
-Problem 2: 
+## Problem 2:   
+
+Using code below, the continuous BMI variable was transformed into a categorical variable (bmi_cat) with the following BMI categories: 
+
+* Severely underweight: BMI < 16.5kg/m^2 
+* Underweight: 16.5 <= BMI <= 18.5 kg/m^2 
+* Normal weight: 18.5 <= BMI <=24.9 kg/m^2 
+* Overweight: 25 <= BMI <= 29.9 kg/m^2 
+* Obesity class I: 30 <= BMI <= 34.9 kg/m^2 
+* Obesity class II: 35 <= BMI <= 39.9 kg/m^2 
+* Obesity class III: BMI >= 40 kg/m^2
+
 ```{r}
 data_bmi = data %>% 
   mutate(bmi_cat = case_when(
@@ -38,46 +49,78 @@ data_bmi = data %>%
 ```
 
 
-Problem 3: 
+## Problem 3: 
+
 
 ```{r}
 data_final = data_bmi %>% 
   mutate(
-    type = recode(classification, 
+    Arm = recode(classification, 
       `1` = "control", 
       `2` = "case"), 
-    outcome = recode(type, 
+    outcome = recode(Arm, 
       "control" = 0, 
       "case" = 1))
     
 
 plot = data_final %>% 
-  ggplot(aes(x = bmi_cat, fill = type)) +
-  geom_bar(stat = "count")
+  ggplot(aes(x = bmi_cat, fill = Arm)) +
+  geom_bar(stat = "count") + 
+  xlab("BMI Category") +
+  ylab("Count of Breast CAncer Cases and Controls") +
+  labs(
+    title = "Proportion of Breast Cancer Cases and Controls by BMI Category"
+  )
 
 plot
 ```
 
 
-Problem 4: 
+## Problem 4: 
+
+Construct a logistic regression model using breast cancer classification as the outcome and glucose, HOMA, leptin, BMI (continuous) and age as the independent variables.
+Fill in the beta estimate and 95% confidence interval associated with a 1-unit change
+in HOMA
+
 ```{r}
-logit_reg = 
+logit_reg_CI = 
   glm(outcome ~ glucose + homa + leptin + bmi + age, 
       family = binomial(link = "logit"), data = data_final) %>% 
-  broom::tidy()
+  confint.default() %>% 
+  knitr::kable()
 
-logit_reg
+head(logit_reg_CI)
+
+logit_reg_betas = 
+  glm(outcome ~ glucose + homa + leptin + bmi + age, 
+      family = binomial(link = "logit"), data = data_final) %>% 
+  broom::tidy() %>% 
+  knitr::kable()
+
+
+logit_reg_betas
+logit_reg_CI
 ```
 
-Problem 5: 
+As seen in the table above, the beta estimate associated with a 1-unit change in HOMA is 0.274 with 95% CI(-0.063, 0.611). 
+
+
+## Problem 5: 
 ```{r}
-linear_reg = 
+linear_reg_betas = 
   lm(insulin ~ bmi + age + glucose, data = data_final) %>% 
-  broom::tidy()
+  broom::tidy() %>% 
+  knitr::kable()
 
-linear_reg
+linear_reg_CI = 
+  lm(insulin ~ bmi + age + glucose, data = data_final)  %>% 
+  confint.default() %>% 
+  knitr::kable()
+
+linear_reg_betas
+linear_reg_CI
 ```
 
-
+As seen in the table above, the beta estimate associated with a 1-unit change in age is -0.054 with 95% CI(-0.156, 0.048). 
 
 

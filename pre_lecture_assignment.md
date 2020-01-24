@@ -1,20 +1,20 @@
-Pre Class Assessment
+Assignment 1
 ================
-Holly Finertie
+Holly Finertie (HF2379)
 1/17/2020
 
 ``` r
 library(tidyverse)
 ```
 
-    ## ── Attaching packages ──────────────────────────────── tidyverse 1.2.1 ──
+    ## ── Attaching packages ────────────────────────────────────────────── tidyverse 1.2.1 ──
 
     ## ✔ ggplot2 3.2.1     ✔ purrr   0.3.2
     ## ✔ tibble  2.1.3     ✔ dplyr   0.8.3
     ## ✔ tidyr   1.0.0     ✔ stringr 1.4.0
     ## ✔ readr   1.3.1     ✔ forcats 0.4.0
 
-    ## ── Conflicts ─────────────────────────────────── tidyverse_conflicts() ──
+    ## ── Conflicts ───────────────────────────────────────────────── tidyverse_conflicts() ──
     ## ✖ dplyr::filter() masks stats::filter()
     ## ✖ dplyr::lag()    masks stats::lag()
 
@@ -22,7 +22,10 @@ library(tidyverse)
 library(ggplot2)
 ```
 
-Read in data files
+## Problem 1:
+
+Please find tables below that provide summaries (min, mean, median, IQR,
+max) of the quantitative features of the dataset.
 
 ``` r
 data = read_csv("./data/data.csv") %>% 
@@ -42,8 +45,6 @@ data = read_csv("./data/data.csv") %>%
     ##   MCP.1 = col_double(),
     ##   Classification = col_double()
     ## )
-
-Problem 1:
 
 ``` r
 summary(data) 
@@ -71,7 +72,20 @@ summary(data)
     ##  3rd Qu.: 700.09   3rd Qu.:2.000  
     ##  Max.   :1698.44   Max.   :2.000
 
-Problem 2:
+## Problem 2:
+
+Using code below, the continuous BMI variable was transformed into a
+categorical variable (bmi\_cat) with the following BMI categories:
+
+  - Severely underweight: BMI \< 16.5kg/m^2
+  - Underweight: 16.5 \<= BMI \<= 18.5 kg/m^2
+  - Normal weight: 18.5 \<= BMI \<=24.9 kg/m^2
+  - Overweight: 25 \<= BMI \<= 29.9 kg/m^2
+  - Obesity class I: 30 \<= BMI \<= 34.9 kg/m^2
+  - Obesity class II: 35 \<= BMI \<= 39.9 kg/m^2
+  - Obesity class III: BMI \>= 40 kg/m^2
+
+<!-- end list -->
 
 ``` r
 data_bmi = data %>% 
@@ -87,63 +101,126 @@ data_bmi = data %>%
   )
 ```
 
-Problem 3:
+## Problem 3:
 
 ``` r
 data_final = data_bmi %>% 
   mutate(
-    type = recode(classification, 
+    Arm = recode(classification, 
       `1` = "control", 
       `2` = "case"), 
-    outcome = recode(type, 
+    outcome = recode(Arm, 
       "control" = 0, 
       "case" = 1))
     
 
 plot = data_final %>% 
-  ggplot(aes(x = bmi_cat, fill = type)) +
-  geom_bar(stat = "count")
+  ggplot(aes(x = bmi_cat, fill = Arm)) +
+  geom_bar(stat = "count") + 
+  xlab("BMI Category") +
+  ylab("Count of Breast CAncer Cases and Controls") +
+  labs(
+    title = "Proportion of Breast Cancer Cases and Controls by BMI Category"
+  )
 
 plot
 ```
 
-![](pre_lecture_assignment_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+![](pre_lecture_assignment_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
 
-Problem 4:
+## Problem 4:
+
+Construct a logistic regression model using breast cancer classification
+as the outcome and glucose, HOMA, leptin, BMI (continuous) and age as
+the independent variables. Fill in the beta estimate and 95% confidence
+interval associated with a 1-unit change in HOMA
 
 ``` r
-logit_reg = 
+logit_reg_CI = 
   glm(outcome ~ glucose + homa + leptin + bmi + age, 
       family = binomial(link = "logit"), data = data_final) %>% 
-  broom::tidy()
+  confint.default() %>% 
+  knitr::kable()
 
-logit_reg
+head(logit_reg_CI)
 ```
 
-    ## # A tibble: 6 x 5
-    ##   term        estimate std.error statistic  p.value
-    ##   <chr>          <dbl>     <dbl>     <dbl>    <dbl>
-    ## 1 (Intercept) -3.63       2.36      -1.54  0.124   
-    ## 2 glucose      0.0817     0.0235     3.47  0.000515
-    ## 3 homa         0.274      0.172      1.59  0.111   
-    ## 4 leptin      -0.00857    0.0158    -0.543 0.587   
-    ## 5 bmi         -0.104      0.0566    -1.84  0.0657  
-    ## 6 age         -0.0229     0.0144    -1.59  0.111
-
-Problem 5:
+    ## [1] "                    2.5 %      97.5 %"
+    ## [2] "------------  -----------  ----------"
+    ## [3] "(Intercept)    -8.2421263   0.9899967"
+    ## [4] "glucose         0.0355895   0.1278079"
+    ## [5] "homa           -0.0631845   0.6109489"
+    ## [6] "leptin         -0.0395085   0.0223609"
 
 ``` r
-linear_reg = 
-  lm(insulin ~ bmi + age + glucose, data = data_final) %>% 
-  broom::tidy()
+logit_reg_betas = 
+  glm(outcome ~ glucose + homa + leptin + bmi + age, 
+      family = binomial(link = "logit"), data = data_final) %>% 
+  broom::tidy() %>% 
+  knitr::kable()
 
-linear_reg
+
+logit_reg_betas
 ```
 
-    ## # A tibble: 4 x 5
-    ##   term        estimate std.error statistic      p.value
-    ##   <chr>          <dbl>     <dbl>     <dbl>        <dbl>
-    ## 1 (Intercept) -13.5       5.86      -2.30  0.0231      
-    ## 2 bmi           0.150     0.164      0.914 0.363       
-    ## 3 age          -0.0540    0.0519    -1.04  0.301       
-    ## 4 glucose       0.230     0.0375     6.13  0.0000000137
+| term        |    estimate | std.error |   statistic |   p.value |
+| :---------- | ----------: | --------: | ----------: | --------: |
+| (Intercept) | \-3.6260648 | 2.3551767 | \-1.5396148 | 0.1236543 |
+| glucose     |   0.0816987 | 0.0235255 |   3.4727682 | 0.0005151 |
+| homa        |   0.2738822 | 0.1719759 |   1.5925611 | 0.1112587 |
+| leptin      | \-0.0085738 | 0.0157833 | \-0.5432196 | 0.5869786 |
+| bmi         | \-0.1042605 | 0.0566423 | \-1.8406817 | 0.0656682 |
+| age         | \-0.0228810 | 0.0143769 | \-1.5915055 | 0.1114959 |
+
+``` r
+logit_reg_CI
+```
+
+|             |       2.5 % |    97.5 % |
+| ----------- | ----------: | --------: |
+| (Intercept) | \-8.2421263 | 0.9899967 |
+| glucose     |   0.0355895 | 0.1278079 |
+| homa        | \-0.0631845 | 0.6109489 |
+| leptin      | \-0.0395085 | 0.0223609 |
+| bmi         | \-0.2152775 | 0.0067564 |
+| age         | \-0.0510592 | 0.0052973 |
+
+As seen in the table above, the beta estimate associated with a 1-unit
+change in HOMA is 0.274 with 95% CI(-0.063, 0.611).
+
+## Problem 5:
+
+``` r
+linear_reg_betas = 
+  lm(insulin ~ bmi + age + glucose, data = data_final) %>% 
+  broom::tidy() %>% 
+  knitr::kable()
+
+linear_reg_CI = 
+  lm(insulin ~ bmi + age + glucose, data = data_final)  %>% 
+  confint.default() %>% 
+  knitr::kable()
+
+linear_reg_betas
+```
+
+| term        |     estimate | std.error |   statistic |   p.value |
+| :---------- | -----------: | --------: | ----------: | --------: |
+| (Intercept) | \-13.4957592 | 5.8594131 | \-2.3032612 | 0.0231101 |
+| bmi         |    0.1496903 | 0.1638181 |   0.9137594 | 0.3628062 |
+| age         |  \-0.0540217 | 0.0519390 | \-1.0400988 | 0.3005341 |
+| glucose     |    0.2298179 | 0.0375152 |   6.1259998 | 0.0000000 |
+
+``` r
+linear_reg_CI
+```
+
+|             |        2.5 % |      97.5 % |
+| ----------- | -----------: | ----------: |
+| (Intercept) | \-24.9799980 | \-2.0115205 |
+| bmi         |  \-0.1713873 |   0.4707679 |
+| age         |  \-0.1558202 |   0.0477769 |
+| glucose     |    0.1562895 |   0.3033463 |
+
+As seen in the table above, the beta estimate associated with a 1-unit
+change in age is -0.054 with 95% CI(-0.156, 0.048).
