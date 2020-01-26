@@ -36,7 +36,7 @@ Using code below, the continuous BMI variable was transformed into a categorical
 
 ```{r}
 data_bmi = data %>% 
-  mutate(bmi_cat = case_when(
+  mutate(bmi_cat = as.factor(case_when(
       bmi <= 16.4 ~ "Severely underweight", 
       bmi >= 16.5 & bmi <= 18.4 ~ "Underweight",
       bmi >=18.5 & bmi <= 24.9 ~ "Normal weight",
@@ -44,8 +44,14 @@ data_bmi = data %>%
       bmi >= 30 & bmi <= 34.9 ~ "Obesity 1", 
       bmi >= 35 & bmi <= 39.9 ~ "Obesity 2", 
       bmi >= 40 ~ "Obesity 3"
+    )), 
+    bmi_cat = fct_relevel(
+      bmi_cat, 
+        str_c(c("Underweight", "Normal weight", 
+               "Overweight", "Obesity 1", "Obesity 2")))
     )
-  )
+    
+  
 ```
 
 
@@ -78,28 +84,21 @@ plot
 
 ## Problem 4: 
 
-Construct a logistic regression model using breast cancer classification as the outcome and glucose, HOMA, leptin, BMI (continuous) and age as the independent variables.
-Fill in the beta estimate and 95% confidence interval associated with a 1-unit change
-in HOMA
 
 ```{r}
-logit_reg_CI = 
-  glm(outcome ~ glucose + homa + leptin + bmi + age, 
-      family = binomial(link = "logit"), data = data_final) %>% 
-  confint.default() %>% 
-  knitr::kable()
-
-head(logit_reg_CI)
-
-logit_reg_betas = 
+logit_reg = 
   glm(outcome ~ glucose + homa + leptin + bmi + age, 
       family = binomial(link = "logit"), data = data_final) %>% 
   broom::tidy() %>% 
+  mutate(
+      "Lower Limit" = estimate - (std.error*1.96), 
+      "Upper Limit" = estimate + (std.error*1.96)
+  ) %>% filter(term == "homa") %>% 
+  select(term, estimate, "Lower Limit", "Upper Limit") %>% 
   knitr::kable()
 
 
-logit_reg_betas
-logit_reg_CI
+logit_reg
 ```
 
 As seen in the table above, the beta estimate associated with a 1-unit change in HOMA is 0.274 with 95% CI(-0.063, 0.611). 
@@ -107,18 +106,17 @@ As seen in the table above, the beta estimate associated with a 1-unit change in
 
 ## Problem 5: 
 ```{r}
-linear_reg_betas = 
+linear_reg = 
   lm(insulin ~ bmi + age + glucose, data = data_final) %>% 
   broom::tidy() %>% 
+  mutate(
+      "Lower Limit" = estimate - (std.error*1.96), 
+      "Upper Limit" = estimate + (std.error*1.96)
+  ) %>% filter(term == "age") %>% 
+  select(term, estimate, "Lower Limit", "Upper Limit") %>% 
   knitr::kable()
 
-linear_reg_CI = 
-  lm(insulin ~ bmi + age + glucose, data = data_final)  %>% 
-  confint.default() %>% 
-  knitr::kable()
-
-linear_reg_betas
-linear_reg_CI
+linear_reg
 ```
 
 As seen in the table above, the beta estimate associated with a 1-unit change in age is -0.054 with 95% CI(-0.156, 0.048). 

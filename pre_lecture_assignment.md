@@ -7,14 +7,14 @@ Holly Finertie (HF2379)
 library(tidyverse)
 ```
 
-    ## ── Attaching packages ────────────────────────────────────────────── tidyverse 1.2.1 ──
+    ## ── Attaching packages ──────────────── tidyverse 1.2.1 ──
 
     ## ✔ ggplot2 3.2.1     ✔ purrr   0.3.2
     ## ✔ tibble  2.1.3     ✔ dplyr   0.8.3
     ## ✔ tidyr   1.0.0     ✔ stringr 1.4.0
     ## ✔ readr   1.3.1     ✔ forcats 0.4.0
 
-    ## ── Conflicts ───────────────────────────────────────────────── tidyverse_conflicts() ──
+    ## ── Conflicts ─────────────────── tidyverse_conflicts() ──
     ## ✖ dplyr::filter() masks stats::filter()
     ## ✖ dplyr::lag()    masks stats::lag()
 
@@ -89,7 +89,7 @@ categorical variable (bmi\_cat) with the following BMI categories:
 
 ``` r
 data_bmi = data %>% 
-  mutate(bmi_cat = case_when(
+  mutate(bmi_cat = as.factor(case_when(
       bmi <= 16.4 ~ "Severely underweight", 
       bmi >= 16.5 & bmi <= 18.4 ~ "Underweight",
       bmi >=18.5 & bmi <= 24.9 ~ "Normal weight",
@@ -97,8 +97,12 @@ data_bmi = data %>%
       bmi >= 30 & bmi <= 34.9 ~ "Obesity 1", 
       bmi >= 35 & bmi <= 39.9 ~ "Obesity 2", 
       bmi >= 40 ~ "Obesity 3"
+    )), 
+    bmi_cat = fct_relevel(
+      bmi_cat, 
+        str_c(c("Underweight", "Normal weight", 
+               "Overweight", "Obesity 1", "Obesity 2")))
     )
-  )
 ```
 
 ## Problem 3:
@@ -130,60 +134,25 @@ plot
 
 ## Problem 4:
 
-Construct a logistic regression model using breast cancer classification
-as the outcome and glucose, HOMA, leptin, BMI (continuous) and age as
-the independent variables. Fill in the beta estimate and 95% confidence
-interval associated with a 1-unit change in HOMA
-
 ``` r
-logit_reg_CI = 
-  glm(outcome ~ glucose + homa + leptin + bmi + age, 
-      family = binomial(link = "logit"), data = data_final) %>% 
-  confint.default() %>% 
-  knitr::kable()
-
-head(logit_reg_CI)
-```
-
-    ## [1] "                    2.5 %      97.5 %"
-    ## [2] "------------  -----------  ----------"
-    ## [3] "(Intercept)    -8.2421263   0.9899967"
-    ## [4] "glucose         0.0355895   0.1278079"
-    ## [5] "homa           -0.0631845   0.6109489"
-    ## [6] "leptin         -0.0395085   0.0223609"
-
-``` r
-logit_reg_betas = 
+logit_reg = 
   glm(outcome ~ glucose + homa + leptin + bmi + age, 
       family = binomial(link = "logit"), data = data_final) %>% 
   broom::tidy() %>% 
+  mutate(
+      "Lower Limit" = estimate - (std.error*1.96), 
+      "Upper Limit" = estimate + (std.error*1.96)
+  ) %>% filter(term == "homa") %>% 
+  select(term, estimate, "Lower Limit", "Upper Limit") %>% 
   knitr::kable()
 
 
-logit_reg_betas
+logit_reg
 ```
 
-| term        |    estimate | std.error |   statistic |   p.value |
-| :---------- | ----------: | --------: | ----------: | --------: |
-| (Intercept) | \-3.6260648 | 2.3551767 | \-1.5396148 | 0.1236543 |
-| glucose     |   0.0816987 | 0.0235255 |   3.4727682 | 0.0005151 |
-| homa        |   0.2738822 | 0.1719759 |   1.5925611 | 0.1112587 |
-| leptin      | \-0.0085738 | 0.0157833 | \-0.5432196 | 0.5869786 |
-| bmi         | \-0.1042605 | 0.0566423 | \-1.8406817 | 0.0656682 |
-| age         | \-0.0228810 | 0.0143769 | \-1.5915055 | 0.1114959 |
-
-``` r
-logit_reg_CI
-```
-
-|             |       2.5 % |    97.5 % |
-| ----------- | ----------: | --------: |
-| (Intercept) | \-8.2421263 | 0.9899967 |
-| glucose     |   0.0355895 | 0.1278079 |
-| homa        | \-0.0631845 | 0.6109489 |
-| leptin      | \-0.0395085 | 0.0223609 |
-| bmi         | \-0.2152775 | 0.0067564 |
-| age         | \-0.0510592 | 0.0052973 |
+| term |  estimate | Lower Limit | Upper Limit |
+| :--- | --------: | ----------: | ----------: |
+| homa | 0.2738822 | \-0.0631907 |   0.6109551 |
 
 As seen in the table above, the beta estimate associated with a 1-unit
 change in HOMA is 0.274 with 95% CI(-0.063, 0.611).
@@ -191,36 +160,22 @@ change in HOMA is 0.274 with 95% CI(-0.063, 0.611).
 ## Problem 5:
 
 ``` r
-linear_reg_betas = 
+linear_reg = 
   lm(insulin ~ bmi + age + glucose, data = data_final) %>% 
   broom::tidy() %>% 
+  mutate(
+      "Lower Limit" = estimate - (std.error*1.96), 
+      "Upper Limit" = estimate + (std.error*1.96)
+  ) %>% filter(term == "age") %>% 
+  select(term, estimate, "Lower Limit", "Upper Limit") %>% 
   knitr::kable()
 
-linear_reg_CI = 
-  lm(insulin ~ bmi + age + glucose, data = data_final)  %>% 
-  confint.default() %>% 
-  knitr::kable()
-
-linear_reg_betas
+linear_reg
 ```
 
-| term        |     estimate | std.error |   statistic |   p.value |
-| :---------- | -----------: | --------: | ----------: | --------: |
-| (Intercept) | \-13.4957592 | 5.8594131 | \-2.3032612 | 0.0231101 |
-| bmi         |    0.1496903 | 0.1638181 |   0.9137594 | 0.3628062 |
-| age         |  \-0.0540217 | 0.0519390 | \-1.0400988 | 0.3005341 |
-| glucose     |    0.2298179 | 0.0375152 |   6.1259998 | 0.0000000 |
-
-``` r
-linear_reg_CI
-```
-
-|             |        2.5 % |      97.5 % |
-| ----------- | -----------: | ----------: |
-| (Intercept) | \-24.9799980 | \-2.0115205 |
-| bmi         |  \-0.1713873 |   0.4707679 |
-| age         |  \-0.1558202 |   0.0477769 |
-| glucose     |    0.1562895 |   0.3033463 |
+| term |    estimate | Lower Limit | Upper Limit |
+| :--- | ----------: | ----------: | ----------: |
+| age  | \-0.0540217 | \-0.1558221 |   0.0477787 |
 
 As seen in the table above, the beta estimate associated with a 1-unit
 change in age is -0.054 with 95% CI(-0.156, 0.048).
